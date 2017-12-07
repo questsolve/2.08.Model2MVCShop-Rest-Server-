@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<!DOCTYPE mapper
+		PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+		"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="PurchaseMapper">
+ 	
+ 	
+	<resultMap id="purchaseSelectMap" type="purchase">
+		<result property="divyAddr" column="dlvy_addr" jdbcType="VARCHAR"/>
+		<result property="divyDate" column="dlvy_date" jdbcType="DATE"/>
+		<result property="divyRequest" column="dlvy_request" jdbcType="VARCHAR"/>
+		<result property="orderDate" column="order_date" jdbcType="DATE"/>
+		<result property="paymentOption" column="payment_option" jdbcType="VARCHAR"/>
+		<result property="receiverName" column="receiver_name" jdbcType="VARCHAR"/>
+		<result property="receiverPhone" column="receiver_phone" jdbcType="VARCHAR"/>
+		<result property="tranCode" column="tran_status_code" jdbcType="VARCHAR"/>
+		<result property="tranNo" column="tran_no" jdbcType="INTEGER"/>
+		<result property="purchaseCount" column="purchase_count" jdbcType="INTEGER"/>
+		
+		<association property="purchaseProd"  javaType="product">
+			<id property="prodNo" column="prod_no" jdbcType="NUMERIC"/>
+			<result property="prodName" column="prod_name" jdbcType="VARCHAR"/>
+			<result property="prodDetail" column="prod_detail" jdbcType="VARCHAR"/>
+			<result property="manuDate" column="manufacture_day" jdbcType="VARCHAR"/>
+			<result property="price" column="price" jdbcType="NUMERIC"/>
+			<result property="fileName" column="image_file" jdbcType="VARCHAR"/>
+			<result property="regDate" column="prod_reg_date" jdbcType="DATE"/>
+			<result property="prodCount" column="prod_count" jdbcType="INTEGER"/>
+			<result property="prodInven" column="prod_inven" jdbcType="INTEGER"/>
+		</association>
+		
+		<association property="buyer"  javaType="user">
+			<id property="userId" column="buyer_id" jdbcType="VARCHAR"/>
+			<result property="userName" column="user_name" jdbcType="VARCHAR"/>
+			<result property="password" column="password" jdbcType="VARCHAR"/>
+			<result property="role" column="role" jdbcType="VARCHAR"/>
+			<result property="ssn" column="ssn" jdbcType="VARCHAR"/>
+			<result property="phone" column="cell_phone" jdbcType="VARCHAR"/>
+			<result property="addr" column="addr" jdbcType="VARCHAR"/>
+			<result property="email" column="email" jdbcType="VARCHAR"/>
+			<result property="regDate" column="user_reg_date" jdbcType="DATE"/>
+		</association>
+		
+	</resultMap>
+	
+	<insert id="addPurchase" parameterType="purchase">
+		INSERT 
+		INTO transaction
+		VALUES(seq_transaction_tran_no.nextval,
+				#{purchaseProd.prodNo},
+				#{buyer.userId},
+				#{paymentOption},
+				#{receiverName},
+				#{receiverPhone},
+				#{divyAddr},
+				#{divyRequest},
+				'0',
+				SYSDATE,
+				#{divyDate},
+				#{purchaseCount},
+				0 )
+	
+	</insert>
+	
+	<select id="getPurchase"	 parameterType="int"	 resultMap="purchaseSelectMap">
+		SELECT *
+		FROM transaction
+		WHERE tran_no = #{tranNo}
+	</select>
+	
+	<select id="getPurchaseList" parameterType="map" resultMap="purchaseSelectMap">
+		SELECT *
+		FROM (	SELECT inner_table.* , ROWNUM AS row_seq
+				FROM	(		SELECT *
+								FROM transaction
+								WHERE buyer_id = #{buyer}
+								ORDER BY tran_no ) inner_table
+				WHERE ROWNUM &lt;= #{purchaseSearch.endRowNum} )
+		WHERE row_seq BETWEEN #{purchaseSearch.startRowNum} AND #{purchaseSearch.endRowNum}
+	</select>
+	
+	<update id="updatePurchase" parameterType="purchase">
+		UPDATE transaction
+		<set>
+			payment_option = #{paymentOption:VARCHAR},
+			receiver_name = #{receiverName:VARCHAR},
+			receiver_phone = #{receiverPhone:VARCHAR},
+			dlvy_request = #{divyRequest:VARCHAR},
+			dlvy_addr = #{divyAddr:VARCHAR},
+			dlvy_date = #{divyDate:DATE}
+		</set>
+		WHERE tran_no = #{tranNo}
+				
+	</update>
+
+	<update id="updateTranCode" parameterType="purchase">
+		UPDATE transaction
+		SET tran_status_code = #{tranCode} 
+		WHERE tran_no = #{tranNo}
+	</update>
+	
+	 <select  id="getTotalPurchaseCount"  parameterType="map"	 resultType="int">
+	  	SELECT COUNT(*)
+	  	FROM(	SELECT *
+				FROM transaction
+				WHERE buyer_id = #{buyer}
+			) countTable						
+	 </select>
+	
+</mapper>
